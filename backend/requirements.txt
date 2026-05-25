@@ -1,0 +1,16 @@
+fastapi>=0.115
+uvicorn[standard]
+watchdog>=4.0
+pypdfium2
+httpx
+rank-bm25
+python-frontmatter
+aiofiles
+python-multipart
+pydantic-settings
+Pillow
+pytesseract
+python-docx
+# Optional OCR backends — install the one matching OCR_BACKEND in .env:
+# easyocr          # OCR_BACKEND=easyocr — pip install easyocr  (~120 MB models auto-download)
+# Ollama vision:   # OCR_BACKEND=ollama  — ollama pull minicpm-v  (~5.5 GB)

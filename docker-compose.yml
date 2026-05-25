@@ -1,0 +1,17 @@
+services:
+  wiki:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./raw:/app/raw
+      - ./wiki:/app/wiki
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_URL=http://localhost:11434
+      - MODEL_NAME=${MODEL_NAME:-qwen3:14b}
+      - OCR_DEVICE=cpu
+    restart: unless-stopped
+
+volumes:
+  ollama_data:

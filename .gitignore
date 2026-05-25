@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.spec
+.venv/
+venv/
+env/
+.claude
+
+# Models and binaries (large, downloaded at install time)
+models/
+*.gguf
+*.safetensors
+*.bin
+bin/
+
+# Environment
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Dev / test artifacts
+backend_err.txt
+backend_out.txt
+/test_*.py
+
+# PyInstaller output
+dist/
+build/
+
+# Raw files (user data, not committed)
+raw/**
+!raw/.gitkeep
+!raw/assets/
+!raw/assets/.gitkeep
+
+# Wiki content (user data)
+wiki/sources/
+wiki/entities/
+wiki/concepts/
