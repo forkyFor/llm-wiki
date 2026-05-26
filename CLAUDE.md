@@ -418,3 +418,41 @@ Se tutto OK:
 | `nvidia-smi` OK ma Ollama usa CPU | Reinstalla Ollama (versione recente include CUDA built-in) |
 | AMD GPU + Windows = CPU-only | ROCm non supportato su Windows. Usa Linux + ROCm oppure accetta CPU-only |
 | EasyOCR lento anche con GPU | Aggiungi a `.env`: `OCR_DEVICE=cuda` — EasyOCR usa torch che supporta CUDA |
+
+### Linux / Ubuntu — problemi specifici
+
+| Problema | Soluzione |
+|---|---|
+| `ollama pull` fallisce con "no space left on device" su VM/LVM | LV sottodimensionato. Estendi: `sudo lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv && sudo resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv` |
+| `npm install -g` ETIMEDOUT su IPv6 | `NODE_OPTIONS='--dns-result-order=ipv4first' npm install -g <pacchetto>` |
+| `npm install -g` permission denied su `/usr/local` | `npm config set prefix ~/.local` poi reinstalla — aggiungere `~/.local/bin` al PATH |
+| `~/.local/bin` non nel PATH in sessioni SSH | Aggiungere `export PATH="$HOME/.local/bin:$PATH"` a `~/.profile` (non solo `~/.bashrc`) |
+| `python3 -m venv` fallisce su Ubuntu | `sudo apt install python3.12-venv` |
+| `pip` non trovato | `sudo apt install python3-pip` oppure usare `python3 -m pip` |
+| Tesseract non installato su Linux | `sudo apt install tesseract-ocr tesseract-ocr-ita` |
+| Porta 8000 non raggiungibile da rete | `sudo ufw allow 8000/tcp comment 'LLM Wiki' && sudo ufw reload` |
+
+### Avvio automatico su Linux (systemd)
+
+```ini
+# /etc/systemd/system/llm-wiki.service
+[Unit]
+Description=LLM Wiki Backend
+After=network.target ollama.service
+
+[Service]
+Type=simple
+User=<utente>
+WorkingDirectory=/home/<utente>/llm-wiki
+ExecStart=/home/<utente>/llm-wiki/.venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now llm-wiki
+```
