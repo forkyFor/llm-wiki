@@ -216,6 +216,13 @@ llm_wiki/
 │   ├── main.py              ← FastAPI app, lifespan, router mount
 │   ├── config.py            ← pydantic-settings
 │   ├── log_stream.py        ← SSELogHandler
+│   ├── auth/
+│   │   ├── db.py            ← SQLite users (asyncio + run_in_executor)
+│   │   ├── crypto.py        ← PBKDF2 + HS256 JWT (stdlib only)
+│   │   ├── middleware.py    ← JWT cookie AuthMiddleware
+│   │   ├── dependencies.py  ← get_current_user, require_admin
+│   │   ├── routers.py       ← /api/auth/* endpoints
+│   │   └── bootstrap.py     ← first-run admin creation
 │   ├── routers/
 │   │   ├── files.py         ← upload / list / download / delete
 │   │   ├── chat.py          ← RAG chat SSE
@@ -306,12 +313,50 @@ pytest tests/ -v
 
 ---
 
+## Multi-user Authentication
+
+LLM Wiki includes a full JWT-based authentication system.
+
+### First run
+
+On first startup with no users in the database, an admin account is auto-created:
+- If `ADMIN_USERNAME` / `ADMIN_PASSWORD` are set in `.env`, those credentials are used.
+- Otherwise a random password is generated and printed in the startup log — save it.
+
+### User management
+
+Only admin users can create or delete accounts. Access the admin panel at `/admin.html`.
+
+### Shared data model
+
+All wiki content is **shared across all users**. The `raw/` and `wiki/` directories are global — any authenticated user can upload, delete, and query documents. The `data/users.db` SQLite database stores only identity information (credentials, roles, timestamps) and has no relation to document storage. The BM25 search index, semantic cache, and Ollama LLM services are global singletons shared across all sessions.
+
+### Auth configuration (`.env`)
+
+| Variable | Default | Description |
+|---|---|---|
+| `DATA_DIR` | `data` | Directory for `users.db` SQLite database |
+| `JWT_SECRET` | _(auto-generated)_ | HMAC key for JWT signing — set for stable sessions across restarts |
+| `JWT_EXPIRE_HOURS` | `24` | Session duration in hours |
+| `JWT_SECURE_COOKIE` | `false` | Set to `true` only when serving over HTTPS |
+| `ADMIN_USERNAME` | `admin` | Admin username for first-run bootstrap |
+| `ADMIN_PASSWORD` | _(auto-generated)_ | Admin password — if empty, a random one is generated and logged |
+
+### Security
+
+- JWT stored in `HttpOnly` + `SameSite=Strict` cookie — not accessible from JavaScript
+- Passwords hashed with PBKDF2-HMAC-SHA256, 480,000 iterations (OWASP 2024)
+- No new Python dependencies — stdlib only (`sqlite3`, `hashlib`, `hmac`, `secrets`)
+- Last admin account cannot be deleted
+
+---
+
 ## Sicurezza
 
-- Endpoint accessibili **solo da localhost** (default `127.0.0.1:8000`)
+- Endpoint accessibili **solo da localhost** (default `127.0.0.1:8000`) — cambia `HOST=0.0.0.0` per LAN
 - Path traversal bloccato su upload/download/delete via `Path.relative_to()`
 - Upload limitato a 50 MB e a estensioni allow-listed
-- Nessuna autenticazione (tool offline personale — non esporre su LAN/WAN)
+- Autenticazione JWT HttpOnly cookie — esporre su LAN/WAN richiede `JWT_SECURE_COOKIE=true` + HTTPS
 
 ---
 

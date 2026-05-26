@@ -89,6 +89,14 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8000
 
+    # Auth
+    data_dir: Path = Path("data")
+    jwt_secret: str = ""
+    jwt_expire_hours: int = 24
+    jwt_secure_cookie: bool = False
+    admin_username: str = ""
+    admin_password: str = ""
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

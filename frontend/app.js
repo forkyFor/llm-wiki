@@ -477,11 +477,32 @@ chatInput.addEventListener('input', () => {
   chatInput.style.height = Math.min(chatInput.scrollHeight, 160) + 'px';
 });
 
-// ── Polling ──────────────────────────────────────────────────────────────────
-checkOllama();
-loadFiles();
-setInterval(loadFiles, 5000);
-setInterval(checkOllama, 30000);
+// ── Auth guard + startup ──────────────────────────────────────────────────────
+(async () => {
+  const r = await fetch('/api/auth/me');
+  if (!r.ok) { window.location.replace('/login.html'); return; }
+  const user = await r.json();
+
+  const authUser = document.getElementById('auth-user');
+  if (authUser) authUser.textContent = user.username;
+
+  const adminLink = document.getElementById('admin-link');
+  if (adminLink && user.is_admin) adminLink.style.display = '';
+
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    logoutBtn.style.display = '';
+    logoutBtn.addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.replace('/login.html');
+    });
+  }
+
+  checkOllama();
+  loadFiles();
+  setInterval(loadFiles, 5000);
+  setInterval(checkOllama, 30000);
+})();
 
 // ── Log Panel ─────────────────────────────────────────────────────────────────
 (function () {

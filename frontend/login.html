@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LLM Wiki — Login</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg); }
+    .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 36px 40px; width: 100%; max-width: 360px; }
+    .login-box h1 { margin: 0 0 24px; font-size: 20px; text-align: center; }
+    .login-box label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 4px; }
+    .login-box input { width: 100%; box-sizing: border-box; padding: 9px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 14px; margin-bottom: 14px; }
+    .login-box input:focus { outline: none; border-color: var(--accent); }
+    .login-btn { width: 100%; padding: 10px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .login-btn:hover { opacity: 0.88; }
+    .login-error { color: #e05; font-size: 13px; margin-top: 12px; text-align: center; min-height: 18px; }
+  </style>
+</head>
+<body>
+<div class="login-box">
+  <h1>📚 LLM Wiki</h1>
+  <form id="login-form" autocomplete="on">
+    <label for="username">Utente</label>
+    <input id="username" name="username" type="text" autocomplete="username" required />
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required />
+    <button class="login-btn" type="submit">Accedi</button>
+    <div class="login-error" id="login-error"></div>
+  </form>
+</div>
+<script>
+(async () => {
+  const r = await fetch('/api/auth/me');
+  if (r.ok) { window.location.replace('/'); return; }
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const err = document.getElementById('login-error');
+    err.textContent = '';
+    const body = {
+      username: document.getElementById('username').value,
+      password: document.getElementById('password').value,
+    };
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      window.location.replace('/');
+    } else {
+      const data = await res.json().catch(() => ({}));
+      err.textContent = data.detail || 'Credenziali non valide';
+    }
+  });
+})();
+</script>
+</body>
+</html>

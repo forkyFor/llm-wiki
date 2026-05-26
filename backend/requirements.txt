@@ -11,6 +11,7 @@ pydantic-settings
 Pillow
 pytesseract
 python-docx
+# Auth: stdlib only (sqlite3, hashlib, hmac, secrets)
 # Optional OCR backends — install the one matching OCR_BACKEND in .env:
 # easyocr          # OCR_BACKEND=easyocr — pip install easyocr  (~120 MB models auto-download)
 # Ollama vision:   # OCR_BACKEND=ollama  — ollama pull minicpm-v  (~5.5 GB)

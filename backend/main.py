@@ -11,6 +11,9 @@ from backend.config import settings, hardware_summary
 from backend import log_stream
 from backend.routers import files, chat, logs
 from backend.services import search, watcher, llm, embeddings
+from backend.auth import db as auth_db, bootstrap
+from backend.auth.middleware import AuthMiddleware
+from backend.auth.routers import router as auth_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s — %(message)s")
 logger = logging.getLogger(__name__)
@@ -21,11 +24,15 @@ FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    settings.data_dir.mkdir(parents=True, exist_ok=True)
     settings.raw_dir.mkdir(parents=True, exist_ok=True)
     settings.wiki_dir.mkdir(parents=True, exist_ok=True)
     (settings.wiki_dir / "sources").mkdir(exist_ok=True)
     (settings.wiki_dir / "entities").mkdir(exist_ok=True)
     (settings.wiki_dir / "concepts").mkdir(exist_ok=True)
+
+    await auth_db.init_db()
+    await bootstrap.bootstrap_admin()
 
     loop = asyncio.get_event_loop()
     log_stream.install(loop)
@@ -42,7 +49,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="LLM Wiki", lifespan=lifespan)
+app.add_middleware(AuthMiddleware)
 
+app.include_router(auth_router)
 app.include_router(files.router)
 app.include_router(files.folders_router)
 app.include_router(chat.router)

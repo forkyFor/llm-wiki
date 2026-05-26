@@ -46,11 +46,28 @@ uvicorn backend.main:app --reload   # http://localhost:8000
 | `RAW_DIR` | `raw` | Cartella documenti sorgente |
 | `WIKI_DIR` | `wiki` | Cartella wiki markdown |
 | `TESSERACT_CMD` | _(sistema)_ | Path Tesseract se non in PATH |
+| `DATA_DIR` | `data` | Cartella database utenti (`users.db`) |
+| `JWT_SECRET` | _(auto-generato)_ | Chiave HMAC per JWT — impostare per sessioni stabili tra riavvii |
+| `JWT_EXPIRE_HOURS` | `24` | Durata sessione in ore |
+| `JWT_SECURE_COOKIE` | `false` | `true` solo se HTTPS |
+| `ADMIN_USERNAME` | `admin` | Username admin primo avvio (solo se nessun utente esiste) |
+| `ADMIN_PASSWORD` | _(auto-generato)_ | Password admin — se vuoto, generata casuale e stampata nel log |
 
 Funzioni esposte da `config.py`:
 - `DETECTED_VRAM_GB` — VRAM NVIDIA rilevata (0.0 se nessuna)
 - `DETECTED_RAM_GB` — RAM totale sistema
 - `hardware_summary()` → stringa log, es. `"GPU CUDA 12.0GB | chat=qwen3:14b ingest=qwen3:32b-a3b ocr_device=cuda (auto)"`
+
+## Multi-user Auth
+
+Auth JWT in HttpOnly cookie (SameSite=Strict). Solo admin crea utenti.
+
+**Modello dati condivisi (EN):** All wiki content is shared across all users. The `raw/` and `wiki/` directories are global — any authenticated user can upload, delete, and query documents. The `data/users.db` SQLite database stores only identity information (credentials, roles, timestamps) and has no relation to document storage. The BM25 search index, semantic cache, and Ollama LLM services are global singletons shared across all sessions.
+
+**Modello dati condivisi (IT):** Tutti i contenuti della wiki sono condivisi tra tutti gli utenti. Le cartelle `raw/` e `wiki/` sono globali: qualsiasi utente autenticato può caricare, eliminare e interrogare documenti. Il database SQLite `data/users.db` contiene solo informazioni di identità e non ha relazione con l'archiviazione dei documenti. L'indice BM25, la cache semantica e i servizi LLM sono singleton globali condivisi tra tutte le sessioni.
+
+Endpoint: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `GET /api/auth/users` (admin), `POST /api/auth/users` (admin), `DELETE /api/auth/users/{id}` (admin).
+Percorsi esenti da auth: `/api/auth/login`, `/api/logs/stream`, tutti i path non-`/api/*`.
 
 ---
 

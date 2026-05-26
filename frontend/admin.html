@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LLM Wiki — Gestione Utenti</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body { background: var(--bg); color: var(--text); font-family: inherit; margin: 0; }
+    .page { max-width: 720px; margin: 0 auto; padding: 32px 24px; }
+    .page-header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
+    .page-header h1 { margin: 0; font-size: 20px; flex: 1; }
+    .page-header a, .page-header button { font-size: 13px; }
+    section { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-bottom: 24px; }
+    section h2 { margin: 0 0 18px; font-size: 16px; }
+    label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 4px; }
+    input[type=text], input[type=password] { width: 100%; box-sizing: border-box; padding: 8px 11px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 14px; margin-bottom: 12px; }
+    input:focus { outline: none; border-color: var(--accent); }
+    .checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 14px; }
+    .checkbox-row input { width: auto; margin: 0; }
+    .btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-danger { background: #c0392b; color: #fff; }
+    .btn-danger:hover { opacity: 0.85; }
+    .form-error { color: #e05; font-size: 13px; margin-top: 8px; min-height: 18px; }
+    .form-ok { color: #27ae60; font-size: 13px; margin-top: 8px; min-height: 18px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 6px 10px; color: var(--text-dim); border-bottom: 1px solid var(--border); font-weight: 500; }
+    td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    .badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge-admin { background: #2c3e50; color: #ecf0f1; }
+    .badge-user { background: var(--border); color: var(--text-dim); }
+    .logout-btn { background: transparent; border: 1px solid var(--border); color: var(--text-dim); border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+    .logout-btn:hover { background: var(--border); }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="page-header">
+    <h1>Gestione Utenti</h1>
+    <a href="/">← Wiki</a>
+    <button class="logout-btn" id="logout-btn">Esci</button>
+  </div>
+
+  <section>
+    <h2>Nuovo utente</h2>
+    <form id="create-form">
+      <label for="new-username">Username</label>
+      <input id="new-username" type="text" required />
+      <label for="new-password">Password</label>
+      <input id="new-password" type="password" required />
+      <div class="checkbox-row">
+        <input id="new-admin" type="checkbox" />
+        <label for="new-admin" style="margin:0;color:var(--text)">Amministratore</label>
+      </div>
+      <button class="btn btn-primary" type="submit">Crea utente</button>
+      <div class="form-error" id="create-error"></div>
+      <div class="form-ok" id="create-ok"></div>
+    </form>
+  </section>
+
+  <section>
+    <h2>Utenti</h2>
+    <table id="users-table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Ruolo</th>
+          <th>Creato</th>
+          <th>Ultimo accesso</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="users-tbody"></tbody>
+    </table>
+  </section>
+</div>
+<script>
+let currentUserId = null;
+
+async function guard() {
+  const r = await fetch('/api/auth/me');
+  if (!r.ok) { window.location.replace('/login.html'); return false; }
+  const user = await r.json();
+  if (!user.is_admin) { window.location.replace('/'); return false; }
+  currentUserId = user.id;
+  return true;
+}
+
+async function loadUsers() {
+  const r = await fetch('/api/auth/users');
+  if (!r.ok) return;
+  const users = await r.json();
+  const tbody = document.getElementById('users-tbody');
+  tbody.innerHTML = '';
+  for (const u of users) {
+    const tr = document.createElement('tr');
+    const lastLogin = u.last_login ? new Date(u.last_login + 'Z').toLocaleString('it-IT') : '—';
+    const created = new Date(u.created_at + 'Z').toLocaleString('it-IT');
+    const isMe = u.id === currentUserId;
+    tr.innerHTML = `
+      <td>${escHtml(u.username)}${isMe ? ' <em style="color:var(--text-dim);font-size:11px">(tu)</em>' : ''}</td>
+      <td><span class="badge ${u.is_admin ? 'badge-admin' : 'badge-user'}">${u.is_admin ? 'Admin' : 'Utente'}</span></td>
+      <td>${created}</td>
+      <td>${lastLogin}</td>
+      <td>${isMe ? '' : `<button class="btn btn-danger" data-id="${u.id}" data-name="${escHtml(u.username)}">Elimina</button>`}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+  tbody.querySelectorAll('[data-id]').forEach(btn => {
+    btn.addEventListener('click', () => deleteUser(Number(btn.dataset.id), btn.dataset.name));
+  });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`Eliminare l'utente "${name}"?`)) return;
+  const r = await fetch(`/api/auth/users/${id}`, { method: 'DELETE' });
+  if (r.ok) {
+    loadUsers();
+  } else {
+    const d = await r.json().catch(() => ({}));
+    alert(d.detail || 'Errore durante eliminazione');
+  }
+}
+
+document.getElementById('create-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('create-error');
+  const okEl = document.getElementById('create-ok');
+  errEl.textContent = '';
+  okEl.textContent = '';
+  const body = {
+    username: document.getElementById('new-username').value,
+    password: document.getElementById('new-password').value,
+    is_admin: document.getElementById('new-admin').checked,
+  };
+  const r = await fetch('/api/auth/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (r.ok) {
+    okEl.textContent = `Utente "${body.username}" creato.`;
+    document.getElementById('create-form').reset();
+    loadUsers();
+  } else {
+    const d = await r.json().catch(() => ({}));
+    errEl.textContent = d.detail || 'Errore creazione utente';
+  }
+});
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  window.location.replace('/login.html');
+});
+
+(async () => {
+  if (!await guard()) return;
+  loadUsers();
+})();
+</script>
+</body>
+</html>
