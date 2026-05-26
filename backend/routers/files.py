@@ -60,6 +60,7 @@ def _file_status(relpath: str) -> str:
 def _build_tree(directory: Path) -> list:
     """Recursively build a file/folder tree. Folders first, then files, both alphabetical."""
     raw_resolved = settings.raw_dir.resolve()
+    directory = directory.resolve()
     try:
         entries = sorted(directory.iterdir(), key=lambda p: (p.is_file(), p.name.lower()))
     except PermissionError:
