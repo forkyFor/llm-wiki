@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -21,11 +21,11 @@
 <div class="login-box">
   <h1>📚 LLM Wiki</h1>
   <form id="login-form" autocomplete="on">
-    <label for="username">Utente</label>
+    <label for="username">Username</label>
     <input id="username" name="username" type="text" autocomplete="username" required />
     <label for="password">Password</label>
     <input id="password" name="password" type="password" autocomplete="current-password" required />
-    <button class="login-btn" type="submit">Accedi</button>
+    <button class="login-btn" type="submit">Sign in</button>
     <div class="login-error" id="login-error"></div>
   </form>
 </div>
@@ -51,7 +51,7 @@
       window.location.replace('/');
     } else {
       const data = await res.json().catch(() => ({}));
-      err.textContent = data.detail || 'Credenziali non valide';
+      err.textContent = data.detail || 'Invalid credentials';
     }
   });
 })();

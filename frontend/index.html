@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,26 +11,26 @@
 <header>
   <h1>📚 LLM Wiki</h1>
   <div class="status-dot" id="ollama-dot"></div>
-  <span class="status-label" id="ollama-label">Connessione…</span>
+  <span class="status-label" id="ollama-label">Connecting…</span>
   <span id="auth-user" style="margin-left:auto;font-size:13px;color:var(--text-dim)"></span>
-  <a href="/admin.html" id="admin-link" style="display:none;font-size:13px;margin-left:12px">Utenti</a>
-  <button id="logout-btn" style="display:none;margin-left:10px;background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px">Esci</button>
+  <a href="/admin.html" id="admin-link" style="display:none;font-size:13px;margin-left:12px">Users</a>
+  <button id="logout-btn" style="display:none;margin-left:10px;background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px">Logout</button>
 </header>
 
 <main>
   <!-- LEFT: File panel -->
   <aside class="sidebar">
     <div class="sidebar-head">
-      <h2>File RAW</h2>
+      <h2>Raw Files</h2>
       <div class="sidebar-head-actions">
-        <button class="new-folder-btn" id="new-root-folder-btn" title="Nuova cartella radice">+ Cartella</button>
+        <button class="new-folder-btn" id="new-root-folder-btn" title="New root folder">+ Folder</button>
         <span id="file-count" style="font-size:12px;color:var(--text-dim)">0 file</span>
       </div>
     </div>
 
     <div class="file-list" id="file-list">
       <div class="empty-state" id="file-empty" style="padding:40px 20px;font-size:13px;">
-        Nessun file.<br>Carica un documento sotto.
+        No files.<br>Upload a document below.
       </div>
     </div>
 
@@ -38,12 +38,12 @@
       <div class="upload-target" id="upload-target">
         <span>📂</span>
         <span class="target-path" id="upload-target-path"></span>
-        <span class="target-clear" id="upload-target-clear" title="Carica nella radice">✕</span>
+        <span class="target-clear" id="upload-target-clear" title="Upload to root">✕</span>
       </div>
       <div class="drop-zone" id="drop-zone">
         <div class="upload-icon">⬆️</div>
-        <div>Trascina o <strong>clicca</strong> per caricare</div>
-        <div style="margin-top:4px;font-size:11px;">PDF, PNG, JPG, TXT e altri</div>
+        <div>Drag or <strong>click</strong> to upload</div>
+        <div style="margin-top:4px;font-size:11px;">PDF, PNG, JPG, TXT and more</div>
         <input type="file" id="file-input" multiple />
       </div>
     </div>
@@ -54,14 +54,14 @@
     <div class="messages" id="messages">
       <div class="empty-state" id="chat-empty">
         <div class="icon">💬</div>
-        <div>Fai una domanda sulla tua wiki</div>
-        <div style="font-size:12px;margin-top:4px;">Le risposte citeranno i file sorgente</div>
+        <div>Ask a question about your wiki</div>
+        <div style="font-size:12px;margin-top:4px;">Answers will cite source files</div>
       </div>
     </div>
 
     <div class="chat-input-area">
-      <textarea id="chat-input" rows="1" placeholder="Domanda sulla wiki… (Invio per inviare, Shift+Invio per a capo)"></textarea>
-      <button class="send-btn" id="send-btn">Invia</button>
+      <textarea id="chat-input" rows="1" placeholder="Ask the wiki… (Enter to send, Shift+Enter for newline)"></textarea>
+      <button class="send-btn" id="send-btn">Send</button>
     </div>
   </section>
 </main>
@@ -69,11 +69,11 @@
 <!-- Delete confirm modal -->
 <div class="modal-overlay" id="modal">
   <div class="modal">
-    <h3 id="modal-title">Elimina</h3>
+    <h3 id="modal-title">Delete</h3>
     <p id="modal-text"></p>
     <div class="modal-actions">
-      <button class="btn btn-cancel" id="modal-cancel">Annulla</button>
-      <button class="btn btn-danger" id="modal-confirm">Elimina</button>
+      <button class="btn btn-cancel" id="modal-cancel">Cancel</button>
+      <button class="btn btn-danger" id="modal-confirm">Delete</button>
     </div>
   </div>
 </div>

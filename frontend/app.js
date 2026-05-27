@@ -94,7 +94,7 @@ function renderCreateInput(depth) {
     <input class="folder-name-input" id="folder-name-input"
            placeholder="Nome cartella" maxlength="60" autocomplete="off" />
     <button class="item-btn confirm-btn" id="folder-create-confirm" title="Crea (Invio)">✓</button>
-    <button class="item-btn cancel-btn"  id="folder-create-cancel"  title="Annulla (Esc)">✕</button>
+    <button class="item-btn cancel-btn"  id="folder-create-cancel"  title="Cancel (Esc)">✕</button>
   </div>`;
 }
 
@@ -114,7 +114,7 @@ function renderTreeItems(items, depth) {
         <button class="item-btn new-subfolder-btn" data-path="${escHtml(item.path)}"
                 title="Nuova sottocartella">+</button>
         <button class="item-btn folder-del-btn" data-path="${escHtml(item.path)}"
-                data-name="${escHtml(item.name)}" title="Elimina cartella">🗑</button>
+                data-name="${escHtml(item.name)}" title="Delete folder">🗑</button>
       </div>`;
       if (isOpen) {
         html += renderTreeItems(item.children || [], depth + 1);
@@ -133,7 +133,7 @@ function renderTreeItems(items, depth) {
         <span class="file-status status-${item.status}">${item.status}</span>
         <button class="delete-btn item-btn file-del-btn"
                 data-path="${escHtml(item.path)}" data-name="${escHtml(item.name)}"
-                title="Elimina">🗑</button>
+                title="Delete">🗑</button>
       </div>`;
     }
   }
@@ -273,14 +273,14 @@ async function confirmCreateFolder() {
     });
     if (!r.ok) {
       const err = await r.json().catch(() => ({}));
-      alert('Errore: ' + (err.detail || r.statusText));
+      alert('Error: ' + (err.detail || r.statusText));
       return;
     }
     if (parentPath !== null) expandedFolders.add(parentPath || path);
     creatingFolder = null;
     await loadFiles();
   } catch (e) {
-    alert('Errore: ' + e.message);
+    alert('Error: ' + e.message);
   }
 }
 
@@ -319,15 +319,15 @@ dropZone.addEventListener('drop', async e => {
 // ── Delete modals ─────────────────────────────────────────────────────────────
 function openDeleteFileModal(path, name) {
   pendingDelete = { type: 'file', path };
-  modalTitle.textContent = 'Elimina file';
-  modalText.textContent = `Eliminare "${name}" e tutte le pagine wiki associate? Operazione irreversibile.`;
+  modalTitle.textContent = 'Delete file';
+  modalText.textContent = `Delete "${name}" and all associated wiki pages? This cannot be undone.`;
   modal.classList.add('visible');
 }
 
 function openDeleteFolderModal(path, name) {
   pendingDelete = { type: 'folder', path };
-  modalTitle.textContent = 'Elimina cartella';
-  modalText.textContent = `Eliminare la cartella "${name}" e tutto il suo contenuto? Verranno rimosse anche le pagine wiki associate. Operazione irreversibile.`;
+  modalTitle.textContent = 'Delete folder';
+  modalText.textContent = `Delete folder "${name}" and all its contents? Associated wiki pages will also be removed. This cannot be undone.`;
   modal.classList.add('visible');
 }
 
@@ -344,8 +344,8 @@ modalConfirm.addEventListener('click', async () => {
   try {
     const url = type === 'folder' ? `${API}/api/folders/${path}` : `${API}/api/files/${path}`;
     const r = await fetch(url, { method: 'DELETE' });
-    if (!r.ok) { alert('Eliminazione fallita: ' + r.statusText); }
-  } catch (e) { alert('Errore: ' + e.message); }
+    if (!r.ok) { alert('Delete failed: ' + r.statusText); }
+  } catch (e) { alert('Error: ' + e.message); }
   // Clean up any selection pointing to deleted path
   if (type === 'folder') {
     expandedFolders.delete(path);
@@ -418,7 +418,7 @@ async function sendMessage() {
     });
 
     if (!r.ok) {
-      messages[messages.length - 1].content = 'Errore: ' + r.statusText;
+      messages[messages.length - 1].content = 'Error: ' + r.statusText;
       messages[messages.length - 1].streaming = false;
       renderMessages();
       return;
@@ -447,7 +447,7 @@ async function sendMessage() {
           }
           if (evt.error) {
             const last = messages[messages.length - 1];
-            last.content = (last.content || '') + '\n[Errore: ' + evt.error + ']';
+            last.content = (last.content || '') + '\n[Error: ' + evt.error + ']';
             last.streaming = false;
             renderMessages();
           }
@@ -456,7 +456,7 @@ async function sendMessage() {
     }
   } catch (e) {
     const last = messages[messages.length - 1];
-    last.content = 'Errore di connessione: ' + e.message;
+    last.content = 'Connection error: ' + e.message;
     last.streaming = false;
     renderMessages();
   } finally {
@@ -558,7 +558,7 @@ chatInput.addEventListener('input', () => {
       try { appendLine(JSON.parse(evt.data)); } catch { }
     };
     es.onerror = () => {
-      appendLine({ ts: '--:--:--', level: 'WARNING', name: 'log-stream', msg: 'Connessione persa, riconnessione…' });
+      appendLine({ ts: '--:--:--', level: 'WARNING', name: 'log-stream', msg: 'Connection lost, reconnecting…' });
     };
   }
 

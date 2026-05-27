@@ -86,9 +86,9 @@ def _get_easyocr_reader():
     global _easyocr_reader
     if _easyocr_reader is None:
         import easyocr
-        logger.info("Caricamento EasyOCR (primo avvio: scarica modelli ~120 MB)…")
+        logger.info("Loading EasyOCR (first run: downloading models ~120 MB)…")
         _easyocr_reader = easyocr.Reader(["it", "en"], gpu=False, verbose=False)
-        logger.info("EasyOCR pronto")
+        logger.info("EasyOCR ready")
     return _easyocr_reader
 
 
@@ -120,7 +120,7 @@ def _get_got_ocr2():
         from transformers import AutoTokenizer, AutoModelForCausalLM
         import torch
         model_id = "stepfun-ai/GOT-OCR-2.0-hf"
-        logger.info("Caricamento GOT-OCR2 (primo avvio: scarica ~580 MB)…")
+        logger.info("Loading GOT-OCR2 (first run: downloading ~580 MB)…")
         # trust_remote_code required by GOT-OCR-2.0-hf architecture  # nosec B615
         _got_ocr2_tokenizer = AutoTokenizer.from_pretrained(  # nosec B615
             model_id, trust_remote_code=True, revision="main"
@@ -133,7 +133,7 @@ def _get_got_ocr2():
             device_map="auto",
         )
         _got_ocr2_model.eval()
-        logger.info("GOT-OCR2 pronto")
+        logger.info("GOT-OCR2 ready")
     return _got_ocr2_model, _got_ocr2_tokenizer
 
 

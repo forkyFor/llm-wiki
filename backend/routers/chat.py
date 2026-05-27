@@ -13,14 +13,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
 SYSTEM_PROMPT = (
-    "Sei l'assistente di una wiki personale offline. "
-    "Il sistema indicizza automaticamente i documenti (PDF, immagini, DOCX) caricati dall'utente. "
-    "Rispondi SOLO usando il contesto wiki fornito qui sotto. Cita sempre il file sorgente. "
-    "Se il contesto è vuoto o dice 'No wiki content': informa l'utente che deve caricare file "
-    "tramite l'interfaccia (trascina o clicca 'Carica' nel pannello sinistro) — "
-    "il sistema li elabora automaticamente con OCR e li rende interrogabili. "
-    "Se la domanda non è coperta dal contesto disponibile, dillo esplicitamente. "
-    "Niente allucinazioni, niente conoscenza esterna."
+    "You are the assistant of an offline personal wiki. "
+    "The system automatically indexes documents (PDF, images, DOCX) uploaded by the user. "
+    "Answer ONLY using the wiki context provided below. Always cite the source file. "
+    "If the context is empty or says 'No wiki content': tell the user they need to upload files "
+    "via the interface (drag or click Upload in the left panel) — "
+    "the system will process them automatically with OCR and make them searchable. "
+    "If the question is not covered by the available context, say so explicitly. "
+    "No hallucinations, no external knowledge."
 )
 
 

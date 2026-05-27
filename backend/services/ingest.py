@@ -260,13 +260,13 @@ async def _do_ingest(raw_path: Path) -> bool:
         return False
 
     if not text.strip():
-        logger.warning("Nessun testo estratto da %s — ingest abortito", filename)
+        logger.warning("No text extracted from %s — ingest aborted", filename)
         return False
     logger.info("OCR completato: %s — %d chars", filename, len(text))
 
     # Step 2: Dedup check (content similarity via embeddings)
     if await _is_duplicate(text):
-        logger.info("Documento già presente (contenuto duplicato) — skip: %s", filename)
+        logger.info("Document already present (duplicate content) — skip: %s", filename)
         return False
 
     # Step 3: LLM summary

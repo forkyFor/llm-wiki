@@ -535,5 +535,5 @@ Write-Host ""
 Write-Host (bold "  FORMATI SUPPORTATI")
 Write-Host "  PDF  •  PNG/JPG/TIFF (OCR)  •  DOCX  •  TXT  •  Markdown"
 Write-Host ""
-Write-Host (dim "  Documentazione: CLAUDE.md | Problemi: README.md#troubleshooting")
+Write-Host (dim "  Documentation: README.md | Troubleshooting: README.md#troubleshooting")
 Write-Host ""
