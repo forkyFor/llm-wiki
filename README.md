@@ -1,92 +1,92 @@
 # LLM Wiki
 
-Wiki personale con OCR automatico e chat AI — completamente offline, zero servizi cloud.
+Offline personal wiki with automatic OCR and AI chat — no cloud, no external services.
 
 **Stack**: FastAPI · Ollama (Qwen3) · pypdfium2 · Tesseract/EasyOCR/GOT-OCR2/Ollama-vision · BM25 · vanilla JS
 
 ---
 
-## Prerequisiti
+## Prerequisites
 
-### Sistema operativo
+### Operating system
 - Windows 10/11, Linux (Ubuntu 20.04+), macOS 12+
 
 ### Hardware
 
-| Componente | Minimo | Consigliato |
+| Component | Minimum | Recommended |
 |---|---|---|
 | RAM | 8 GB | 16 GB |
-| Storage | 6 GB liberi | 15 GB liberi |
-| CPU | x86-64 qualsiasi | 8+ core |
-| GPU | Non richiesta | NVIDIA ≥ 4 GB VRAM (CUDA) — 5–10x speedup |
+| Storage | 6 GB free | 15 GB free |
+| CPU | any x86-64 | 8+ cores |
+| GPU | not required | NVIDIA ≥ 4 GB VRAM (CUDA) — 5–10x speedup |
 
-### Software obbligatorio
+### Required software
 
-| Software | Versione | Note |
+| Software | Version | Notes |
 |---|---|---|
 | Python | ≥ 3.11 | [python.org](https://python.org) |
-| Tesseract OCR | qualsiasi | + language pack `ita` + `eng` |
+| Tesseract OCR | any | + language packs for your language |
 | Ollama | ≥ 0.3 | [ollama.com](https://ollama.com) |
 
-### Connessione internet
-Solo durante l'installazione (download modelli + pip). **Runtime: completamente offline.**
+### Internet connection
+Required only during installation (model downloads + pip). **Runtime: fully offline.**
 
-### Opzionale
-- **NVIDIA GPU** + driver CUDA → TTFT 2–8s invece di 15–30s
-- **EasyOCR**: `pip install easyocr` (~120 MB) per font non standard
-- **GOT-OCR2**: `pip install transformers torch torchvision` (~580 MB) per layout complessi e tabelle
-- **Ollama vision** (`minicpm-v`, ~5.5 GB) per OCR di massima qualità su manoscritti
+### Optional
+- **NVIDIA GPU** + CUDA drivers → TTFT 2–8s instead of 15–30s
+- **EasyOCR**: `pip install easyocr` (~120 MB) for non-standard fonts
+- **GOT-OCR2**: `pip install transformers torch torchvision` (~580 MB) for complex layouts and tables
+- **Ollama vision** (`minicpm-v`, ~5.5 GB) for highest-quality OCR on manuscripts
 
 ---
 
-## Avvio rapido
+## Quick start
 
 ```bash
-# 1. Avvia Ollama
+# 1. Start Ollama
 ollama serve
 
-# 2. Scarica i modelli (una volta sola)
+# 2. Download models (once)
 ollama pull qwen3:8b      # chat/RAG — 5.2 GB
 ollama pull qwen3:14b     # ingest OCR→wiki — 8.2 GB
 
-# 3. Installa dipendenze Python
+# 3. Install Python dependencies
 pip install -r backend/requirements.txt
 
-# 4. Configura
-cp .env.example .env       # modifica se necessario
+# 4. Configure
+cp .env.example .env       # edit if needed
 
-# 5. Avvia
+# 5. Start
 uvicorn backend.main:app --reload
 ```
 
-Apri http://localhost:8000
+Open http://localhost:8000
 
-> **Installazione guidata**: usa `.\install.ps1` (Windows) o `./install.sh` (Linux/macOS)
-> per procedura interattiva che rileva hardware e seleziona i modelli ottimali.
-
----
-
-## Funzionalità
-
-- **Upload file**: PDF, immagini, `.txt`, `.md`, `.docx` — drag-drop o bottone
-- **OCR automatico**: pypdfium2 (testo embedded) + Tesseract (scansionati/immagini)
-- **Ingest wiki**: Qwen3 riassume con map-reduce e scrive `wiki/sources/YYYY-MM-DD_slug.md`
-- **Chat RAG**: BM25 recupera passaggi rilevanti → Qwen3 streaming con citazione sorgenti
-- **Semantic cache**: domande simili già viste → risposta istantanea (~0ms) senza chiamare il modello
-- **Log stream**: UI mostra log ingest in tempo reale via SSE
-- **Elimina file**: rimuove raw + wiki pages in cascade
+> **Guided install**: use `.\install.ps1` (Windows) or `./install.sh` (Linux/macOS)
+> for an interactive setup that detects your hardware and selects optimal models.
 
 ---
 
-## Architettura
+## Features
+
+- **File upload**: PDF, images, `.txt`, `.md`, `.docx` — drag-drop or button
+- **Automatic OCR**: pypdfium2 (embedded text) + Tesseract/EasyOCR/GOT-OCR2 (scanned pages)
+- **Wiki ingest**: Qwen3 summarizes with map-reduce and writes `wiki/sources/YYYY-MM-DD_slug.md`
+- **RAG chat**: BM25 retrieves relevant passages → Qwen3 streaming with source citations
+- **Semantic cache**: similar previously seen questions → instant response (~0ms) without calling the model
+- **Log stream**: UI shows ingest logs in real time via SSE
+- **Delete files**: removes raw + wiki pages in cascade
+
+---
+
+## Architecture
 
 ```
 Browser (frontend/)
     │
     ├── POST /api/files        → upload + trigger ingest
-    ├── GET  /api/files        → lista file con status
-    ├── POST /api/chat         → chat RAG (SSE streaming)
-    └── GET  /api/logs/stream  → log ingest in tempo reale (SSE)
+    ├── GET  /api/files        → file list with status
+    ├── POST /api/chat         → RAG chat (SSE streaming)
+    └── GET  /api/logs/stream  → ingest logs in real time (SSE)
          │
     FastAPI (backend/)
          │
@@ -100,73 +100,73 @@ Browser (frontend/)
     │  └── watcher.py watchdog   │
     └─────────────────────────────┘
          │
-    raw/            ← file originali
-    wiki/sources/   ← pagine markdown generate
-    wiki/index.md   ← catalogo
-    wiki/log.md     ← log operazioni
+    raw/            ← source files
+    wiki/sources/   ← generated markdown pages
+    wiki/index.md   ← catalog
+    wiki/log.md     ← operation log
 ```
 
-### Pipeline ingest
+### Ingest pipeline
 
 ```
 File upload
-    → OCR Tier 1: pypdfium2 (testo embedded, istantaneo)
-    → OCR Tier 2: Tesseract/EasyOCR/GOT-OCR2/Ollama-vision (scansioni)
-                  ↳ parallel: ThreadPoolExecutor(max_workers=4) su ogni pagina
-    → Dedup check: embed(primi 800 chars) → cosine sim con wiki esistenti
-                   se similarity ≥ 0.95 → skip (contenuto già presente)
-    → se doc ≤ 50k chars: 1 LLM call (ingest_model, max_tokens=800)
-    → se doc > 50k chars: map-reduce
-        map:    chat_model, max_tokens=200 per chunk (veloce)
-        reduce: chat_model, max_tokens=700 (merge in wiki page)
+    → OCR Tier 1: pypdfium2 (embedded text, instant)
+    → OCR Tier 2: Tesseract/EasyOCR/GOT-OCR2/Ollama-vision (scanned pages)
+                  ↳ parallel: ThreadPoolExecutor(max_workers=4) per page
+    → Dedup check: embed(first 800 chars) → cosine sim against existing wiki
+                   if similarity ≥ 0.95 → skip (duplicate content)
+    → if doc ≤ 50k chars: 1 LLM call (ingest_model, max_tokens=800)
+    → if doc > 50k chars: map-reduce
+        map:    chat_model, max_tokens=200 per chunk (fast)
+        reduce: chat_model, max_tokens=700 (merge into wiki page)
     → write wiki/sources/YYYY-MM-DD_slug.md
     → BM25 index rebuild
 ```
 
-### Tempi ingest stimati (CPU-only, qwen3:8b chat / qwen3:14b ingest)
+### Estimated ingest times (CPU-only, qwen3:8b chat / qwen3:14b ingest)
 
-| Documento | OCR | LLM | Totale |
+| Document | OCR | LLM | Total |
 |---|---|---|---|
-| PDF testo 50 pag (1 chunk) | <1s | ~114s (800 tok @ 7t/s) | **~2 min** |
-| PDF scansionato 50 pag | ~25s (4 thread) | ~114s | **~2.5 min** |
-| PDF testo 200 pag (4 chunks) | <1s | map 4×29s + reduce 100s = 216s | **~4 min** |
-| Duplicato contenuto | <1s | 0 (skip) | **<2s** |
+| 50-page text PDF (1 chunk) | <1s | ~114s (800 tok @ 7t/s) | **~2 min** |
+| 50-page scanned PDF | ~25s (4 threads) | ~114s | **~2.5 min** |
+| 200-page text PDF (4 chunks) | <1s | map 4×29s + reduce 100s = 216s | **~4 min** |
+| Duplicate content | <1s | 0 (skip) | **<2s** |
 
-### Pipeline chat RAG
+### RAG chat pipeline
 
 ```
-Domanda utente
+User question
     → embed(query) via nomic-embed-text (~50ms)
     → Semantic cache check (cosine similarity ≥ 0.85)
-        HIT:  risposta istantanea (~500ms totali)
+        HIT:  instant response (~500ms total)
         MISS: BM25 search (top_k=3, 300 chars/passage)
               → Build prompt → Ollama qwen3:8b streaming
-              → Accumula response → store in semantic cache
-    → SSE stream al browser
+              → Accumulate response → store in semantic cache
+    → SSE stream to browser
 ```
 
 ---
 
-## Configurazione (`.env`)
+## Configuration (`.env`)
 
-`CHAT_MODEL_NAME`, `INGEST_MODEL_NAME` e `OCR_DEVICE` vengono **auto-rilevati** a ogni avvio in base all'hardware (VRAM GPU → RAM CPU). Il `.env` li sovrascrive se presenti.
+`CHAT_MODEL_NAME`, `INGEST_MODEL_NAME`, and `OCR_DEVICE` are **auto-detected** at every startup based on hardware (GPU VRAM → CPU RAM). The `.env` file overrides them when set.
 
-| Variabile | Default | Descrizione |
+| Variable | Default | Description |
 |---|---|---|
-| `OLLAMA_URL` | `http://localhost:11434` | Endpoint Ollama |
-| `CHAT_MODEL_NAME` | _(auto-rilevato)_ | Modello chat/RAG — override manuale opzionale |
-| `INGEST_MODEL_NAME` | _(auto-rilevato)_ | Modello ingest OCR→wiki — override manuale opzionale |
-| `EMBED_MODEL_NAME` | `nomic-embed-text` | Modello embedding per semantic cache |
-| `CACHE_SIMILARITY_THRESHOLD` | `0.85` | Soglia cosine similarity per cache hit |
-| `CACHE_MAX_ENTRIES` | `500` | Max risposte memorizzate in cache |
-| `OCR_BACKEND` | `tesseract` | Backend OCR: `tesseract` · `easyocr` · `ollama` |
-| `OCR_MODEL_NAME` | `minicpm-v` | Vision model usato con `OCR_BACKEND=ollama` |
-| `OCR_DEVICE` | _(auto-rilevato)_ | `cpu` o `cuda` — impostato in base alla GPU disponibile |
-| `RAW_DIR` | `raw` | Cartella file sorgente |
-| `WIKI_DIR` | `wiki` | Cartella wiki markdown |
-| `TESSERACT_CMD` | _(PATH)_ | Path Tesseract se non in PATH |
+| `OLLAMA_URL` | `http://localhost:11434` | Ollama endpoint |
+| `CHAT_MODEL_NAME` | _(auto-detected)_ | Chat/RAG model — optional manual override |
+| `INGEST_MODEL_NAME` | _(auto-detected)_ | Ingest OCR→wiki model — optional manual override |
+| `EMBED_MODEL_NAME` | `nomic-embed-text` | Embedding model for semantic cache |
+| `CACHE_SIMILARITY_THRESHOLD` | `0.85` | Cosine similarity threshold for cache hit |
+| `CACHE_MAX_ENTRIES` | `500` | Max cached responses |
+| `OCR_BACKEND` | `tesseract` | OCR backend: `tesseract` · `easyocr` · `got_ocr2` · `ollama` |
+| `OCR_MODEL_NAME` | `minicpm-v` | Vision model used with `OCR_BACKEND=ollama` |
+| `OCR_DEVICE` | _(auto-detected)_ | `cpu` or `cuda` — set based on available GPU |
+| `RAW_DIR` | `raw` | Source files directory |
+| `WIKI_DIR` | `wiki` | Wiki markdown directory |
+| `TESSERACT_CMD` | _(PATH)_ | Tesseract path if not in PATH |
 
-Il log di avvio mostra il risultato del rilevamento:
+Startup log shows the detection result:
 ```
 Hardware: CPU-only RAM=15.3GB | chat=qwen3:8b ingest=qwen3:14b ocr_device=cpu (auto)
 Hardware: GPU CUDA 12.0GB    | chat=qwen3:14b ingest=qwen3:32b-a3b ocr_device=cuda (auto)
@@ -174,30 +174,30 @@ Hardware: GPU CUDA 12.0GB    | chat=qwen3:14b ingest=qwen3:32b-a3b ocr_device=cu
 
 ---
 
-## Selezione modelli per hardware
+## Hardware-adaptive model selection
 
-I due modelli **non** sono mai in memoria insieme (Ollama li carica su richiesta e scarica dopo 5 min idle).
+The two models are **never** in memory at the same time (Ollama loads on demand and unloads after 5 min idle).
 
-`config.py` rileva hardware a ogni avvio (`nvidia-smi` per GPU, `wmic/proc` per RAM) e imposta i default. Il `.env` sovrascrive sempre.
+`config.py` detects hardware at every startup (`nvidia-smi` for GPU, `wmic`/`/proc/meminfo` for RAM) and sets defaults. `.env` always overrides.
 
-### Con GPU NVIDIA (CUDA — consigliato)
+### With NVIDIA GPU (CUDA — recommended)
 
-Ollama rileva CUDA automaticamente. Nessuna config aggiuntiva — basta avere driver NVIDIA installati.
+Ollama detects CUDA automatically. No extra configuration — just have NVIDIA drivers installed.
 
-| VRAM GPU | CHAT_MODEL_NAME | INGEST_MODEL_NAME | Quantizzazione | Risposta chat |
+| GPU VRAM | CHAT_MODEL_NAME | INGEST_MODEL_NAME | Quantization | Chat response |
 |---|---|---|---|---|
 | ≥ 24 GB | `qwen3:14b` | `qwen3:32b-a3b` | q5_K_M | 1–3s |
 | ≥ 12 GB | `qwen3:14b` | `qwen3:32b-a3b` | q5_K_M | 2–5s |
 | ≥ 8 GB | `qwen3:8b` | `qwen3:14b` | q5_K_M | 3–8s |
 | ≥ 4 GB | `qwen3:4b` | `qwen3:8b` | q4_K_M | 5–12s |
 
-Con GPU: `ollama pull qwen3:14b-q5_K_M` per qualità superiore in ingest.
+With GPU: `ollama pull qwen3:14b-q5_K_M` for higher ingest quality.
 
-### Senza GPU / CPU-only (AMD Windows, Intel iGPU, no GPU)
+### Without GPU / CPU-only (AMD on Windows, Intel iGPU, no GPU)
 
-AMD su Windows e GPU integrate **non supportate** da Ollama per accelerazione.
+AMD on Windows and integrated GPUs are **not supported** by Ollama for acceleration.
 
-| RAM disponibile | CHAT_MODEL_NAME | INGEST_MODEL_NAME | Risposta chat |
+| Available RAM | CHAT_MODEL_NAME | INGEST_MODEL_NAME | Chat response |
 |---|---|---|---|
 | ≤ 4 GB | `qwen3:1.7b` | `qwen3:1.7b` | 20–40s |
 | 4–6 GB | `qwen3:1.7b` | `qwen3:4b` | 30–60s |
@@ -208,13 +208,13 @@ AMD su Windows e GPU integrate **non supportate** da Ollama per accelerazione.
 
 ---
 
-## Struttura progetto
+## Project structure
 
 ```
 llm_wiki/
 ├── backend/
 │   ├── main.py              ← FastAPI app, lifespan, router mount
-│   ├── config.py            ← pydantic-settings
+│   ├── config.py            ← pydantic-settings, hardware auto-detection
 │   ├── log_stream.py        ← SSELogHandler
 │   ├── auth/
 │   │   ├── db.py            ← SQLite users (asyncio + run_in_executor)
@@ -228,75 +228,75 @@ llm_wiki/
 │   │   ├── chat.py          ← RAG chat SSE
 │   │   └── logs.py          ← log stream SSE
 │   └── services/
-│       ├── ocr.py           ← pypdfium2 + Tesseract + python-docx
+│       ├── ocr.py           ← pypdfium2 + Tesseract/EasyOCR/GOT-OCR2
 │       ├── ingest.py        ← map-reduce pipeline
 │       ├── llm.py           ← httpx → Ollama
 │       ├── search.py        ← BM25Okapi
-│       └── watcher.py       ← watchdog su raw/
+│       └── watcher.py       ← watchdog on raw/
 ├── frontend/                ← vanilla JS + CSS
 ├── docs/
-│   ├── architecture.md      ← diagrammi Mermaid
-│   ├── install-slides.md    ← slide Marp installazione
-│   └── install-slides.pdf   ← render PDF slide
-├── tests/                   ← 36 pytest (no modelli richiesti)
+│   ├── architecture.md      ← Mermaid diagrams
+│   ├── install-slides.md    ← Marp slides
+│   └── install-slides.pdf   ← rendered PDF
+├── tests/                   ← pytest (no models required)
 ├── launcher.py              ← ensure ollama serve + uvicorn
-├── install.ps1              ← installer interattivo Windows
-├── install.sh               ← installer interattivo Linux/macOS
+├── install.ps1              ← interactive installer for Windows
+├── install.sh               ← interactive installer for Linux/macOS
 └── .env.example
 ```
 
 ---
 
-## OCR — backend e formati
+## OCR backends
 
-### Confronto backend
+### Comparison
 
-| Backend | Qualità | Velocità | Peso | Hardware minimo | Ideale per |
+| Backend | Quality | Speed | Size | Min hardware | Best for |
 |---|---|---|---|---|---|
-| `tesseract` (default) | buona | veloce | ~50 MB | CPU, 4 GB RAM | scan puliti, uso quotidiano |
-| `easyocr` | migliore | media | ~120 MB | CPU, 6 GB RAM | font non-standard, testo ruotato |
-| `got_ocr2` | ottima | media | ~580 MB | CPU 8 GB RAM / GPU 4 GB VRAM | layout multi-colonna, tabelle, multilingua |
-| `ollama` | massima | lenta | ~5.5 GB | GPU 8 GB VRAM (o CPU lento) | manoscritti, layout complessi |
+| `tesseract` (default) | good | fast | ~50 MB | CPU, 4 GB RAM | clean scans, daily use |
+| `easyocr` | better | medium | ~120 MB | CPU, 6 GB RAM | non-standard fonts, rotated text |
+| `got_ocr2` | great | medium | ~580 MB | CPU 8 GB RAM / GPU 4 GB VRAM | multi-column layouts, tables, multilingual |
+| `ollama` | best | slow | ~5.5 GB | GPU 8 GB VRAM (or slow CPU) | manuscripts, complex layouts |
 
-> **GOT-OCR2** (`stepfun-ai/GOT-OCR-2.0-hf`, Apache 2.0): modello transformer ~580 MB, gestisce pagine intere con layout complessi, tabelle e testo multilingue — qualità superiore a EasyOCR senza richiedere GPU dedicata.
+> **GOT-OCR2** (`stepfun-ai/GOT-OCR-2.0-hf`, Apache 2.0): ~580 MB transformer model, handles full pages with complex layouts, tables, and multilingual text — better than EasyOCR without requiring a dedicated GPU.
 
-### Selezione consigliata per hardware
+### Recommended by hardware
 
-| Hardware disponibile | Backend consigliato |
+| Available hardware | Recommended backend |
 |---|---|
 | CPU ≤ 6 GB RAM | `tesseract` |
-| CPU 6–14 GB RAM, documenti semplici | `easyocr` |
-| CPU 8+ GB RAM, documenti complessi | `got_ocr2` |
+| CPU 6–14 GB RAM, simple documents | `easyocr` |
+| CPU 8+ GB RAM, complex documents | `got_ocr2` |
 | GPU 4+ GB VRAM | `got_ocr2` (GPU auto-detect) |
-| GPU 8+ GB VRAM, massima qualità | `ollama` (minicpm-v) |
+| GPU 8+ GB VRAM, best quality | `ollama` (minicpm-v) |
 
-### Formati supportati
+### Supported formats
 
-| Formato | Tier 1 (sempre) | Tier 2 (backend selezionato) |
+| Format | Tier 1 (always) | Tier 2 (selected backend) |
 |---|---|---|
-| PDF con testo embedded | pypdfium2 (istantaneo) | — |
-| PDF scansionato | pypdfium2 rasterize | Tesseract / EasyOCR / GOT-OCR2 / Ollama vision |
+| PDF with embedded text | pypdfium2 (instant) | — |
+| Scanned PDF | pypdfium2 rasterize | Tesseract / EasyOCR / GOT-OCR2 / Ollama vision |
 | PNG/JPG/TIFF/BMP/WebP | — | Tesseract / EasyOCR / GOT-OCR2 / Ollama vision |
 | DOCX / DOC | python-docx | — |
-| TXT / MD | Lettura UTF-8 | — |
+| TXT / MD | UTF-8 read | — |
 
-### Installazione backend
+### Backend installation
 
 ```bash
-# tesseract (default — sempre consigliato come base)
+# tesseract (default — always recommended as base)
 winget install UB-Mannheim.TesseractOCR                # Windows
-sudo apt install tesseract-ocr tesseract-ocr-ita       # Linux
+sudo apt install tesseract-ocr tesseract-ocr-eng       # Linux
 
-# easyocr (upgrade qualità, ~120 MB download automatico primo uso)
+# easyocr (~120 MB auto-download on first use)
 pip install easyocr
 # .env: OCR_BACKEND=easyocr
 
-# got_ocr2 (ottima qualità, layout complessi — ~580 MB download automatico primo uso)
+# got_ocr2 (complex layouts — ~580 MB auto-download on first use)
 pip install transformers torch torchvision
 # .env: OCR_BACKEND=got_ocr2
-# GPU NVIDIA rilevata automaticamente da torch/transformers
+# NVIDIA GPU auto-detected by torch/transformers
 
-# ollama vision (massima qualità, 5.5 GB)
+# ollama vision (best quality, 5.5 GB)
 ollama pull minicpm-v
 # .env: OCR_BACKEND=ollama
 #       OCR_MODEL_NAME=minicpm-v
@@ -304,18 +304,16 @@ ollama pull minicpm-v
 
 ---
 
-## Test
+## Tests
 
 ```bash
 pytest tests/ -v
-# 36 test, nessun modello o Ollama richiesti (tutto mockato)
+# no models or Ollama required (all mocked)
 ```
 
 ---
 
 ## Multi-user Authentication
-
-LLM Wiki includes a full JWT-based authentication system.
 
 ### First run
 
@@ -351,16 +349,16 @@ All wiki content is **shared across all users**. The `raw/` and `wiki/` director
 
 ---
 
-## Sicurezza
+## Security notes
 
-- Endpoint accessibili **solo da localhost** (default `127.0.0.1:8000`) — cambia `HOST=0.0.0.0` per LAN
-- Path traversal bloccato su upload/download/delete via `Path.relative_to()`
-- Upload limitato a 50 MB e a estensioni allow-listed
-- Autenticazione JWT HttpOnly cookie — esporre su LAN/WAN richiede `JWT_SECURE_COOKIE=true` + HTTPS
+- Endpoints bound to localhost by default (`127.0.0.1:8000`) — set `HOST=0.0.0.0` to expose on LAN
+- Path traversal blocked on upload/download/delete via `Path.relative_to()`
+- Upload limited to 50 MB and an allow-listed set of extensions
+- Exposing on LAN/WAN requires `JWT_SECURE_COOKIE=true` + HTTPS
 
 ---
 
-## Documentazione
+## Documentation
 
-- `docs/architecture.md` — diagrammi Mermaid componenti, ingest, RAG, moduli
-- `docs/install-slides.pdf` — slide installazione (renderizzabile con Marp)
+- `docs/architecture.md` — Mermaid component, ingest, RAG, and module diagrams
+- `docs/install-slides.pdf` — installation slides (renderable with Marp)
