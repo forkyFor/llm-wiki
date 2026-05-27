@@ -37,6 +37,9 @@ backend_out.txt
 dist/
 build/
 
+# User database (created at runtime)
+data/
+
 # Raw files (user data, not committed)
 raw/**
 !raw/.gitkeep
